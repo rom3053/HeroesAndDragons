@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using HeroesAndDragons.DBData;
 using HeroesAndDragons.Helpers;
 using HeroesAndDragons.Models;
+using HeroesAndDragons.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -28,9 +29,6 @@ namespace HeroesAndDragons.Controllers
             string searchString,
             int? pageNumber)
         {
-            //ViewData["CurrentSort"] = sortOrder;
-            //ViewData["NameSortParm"] = String.IsNullOrEmpty(sortOrder) ? "name_desc" : "";
-            //ViewData["DateSortParm"] = sortOrder == "Date" ? "date_desc" : "Date";
 
             if (searchString != null)
             {
@@ -46,7 +44,7 @@ namespace HeroesAndDragons.Controllers
                            select s;
             if (!String.IsNullOrEmpty(searchString))
             {
-                heroes = heroes.Where(s => s.Name.Contains(searchString));                      
+                heroes = heroes.Where(s => s.Name.StartsWith(searchString));                      
             }
             switch (sortOrder)
             {
@@ -85,20 +83,13 @@ namespace HeroesAndDragons.Controllers
             //в идеале просуммировать урон чтобы без дублей
             var hits = from h in _ctx.Hits
                        where h.HeroId == 2
-                       select h;
-            //var hitsDragon = from h in _ctx.Hits
-            //                 where h.HeroId == 2
-            //                 join d in _ctx.Dragons
-            //                  on h.DragonId equals d.Id 
-            //                 group new {d.Name, h.HitPower} by h.DragonId into hitstats
-            //                 orderby hitstats.Key
-            //                 select new
-            //                 {
-            //                     DragonID = hitstats.Key,
-            //                     DragonName = hitstats,
-                                 
-            //                     TotalDamage = hitstats.Sum(x => x.HitPower),
-            //                 };
+                       select new DragonHitStat
+                       {
+                           DragonName = (from d in _ctx.Dragons where d.Id == h.DragonId select d.Name).FirstOrDefault(),
+                           HitPower = h.HitPower,
+                           CreatedAt= h.CreatedAt,
+                       };
+            
 
             var hitsDragonV = from h in _ctx.Hits
                              where h.HeroId == 2
@@ -107,17 +98,19 @@ namespace HeroesAndDragons.Controllers
                              select new
                              {
                                  DragonId = hitdragon.Key,
+                                 DragonName = (from d in _ctx.Dragons where d.Id == hitdragon.Key select d.Name).FirstOrDefault(),
                                  TotalDamage = hitdragon.Sum(x => x.HitPower)
                              };
+            
             foreach (var item in hitsDragonV)
             {
                 Console.WriteLine(item.TotalDamage);
             }
 
-            foreach (var item in hitsDragon)
-            {
-                Console.WriteLine(item.DragonID);
-            }
+            //foreach (var item in hitsDragon)
+            //{
+            //    Console.WriteLine(item.DragonID);
+            //}
             switch (sortOrder)
             {
                 case "name_desc":
@@ -135,17 +128,17 @@ namespace HeroesAndDragons.Controllers
             }
 
             int pageSize = 3;
-            return Ok(await PaginatedList<Hit>.CreateAsync(hits.AsNoTracking(), pageNumber ?? 1, pageSize));
+            return Ok(await PaginatedList<DragonHitStat>.CreateAsync(hits.AsNoTracking(), pageNumber ?? 1, pageSize));
         }
         //[Authorize]
         [HttpGet("attackdragon")]
-        public IActionResult Hit(int dragonId)
+        public async Task<IActionResult> HitAsync(int dragonId)
         {
             bool heroChecked = true;
             int heroId = 2;
             int heroIdClaim = 15;
 
-            var dragon = _ctx.Dragons.FirstOrDefault(d => d.Id == dragonId);
+            var dragon = await _ctx.Dragons.FindAsync(dragonId);
             //-----------------------
             //foreach (var claim in User.Claims)
             //{
@@ -155,7 +148,7 @@ namespace HeroesAndDragons.Controllers
             //    }
             //}
 
-            var hero = _ctx.Heroes.FirstOrDefault(h => h.Id == heroId);
+            var hero = await _ctx.Heroes.FindAsync(heroId);
             if (hero == null || !heroChecked || dragon == null)
             {
                 return BadRequest(new { errorText = "Couldnt find a hero or a dragon" });
@@ -163,13 +156,13 @@ namespace HeroesAndDragons.Controllers
             //--------------------------
             Random rnd = new Random();
             int hitPower =  hero.WeaponDamage + rnd.Next(1, 3);
-            int dragonHealtPointNow = dragon.HealthPoint - hitPower;
+            int dragonHealtPointNow = dragon.MaxHealthPoint - hitPower;
 
             Hit heroStrike = new Hit() { CreatedAt = DateTime.Now, DragonId = dragon.Id, HeroId = hero.Id, HitPower = hitPower };
 
-            dragon.HealthPoint = dragonHealtPointNow;
-            _ctx.Hits.Add(heroStrike);
-            _ctx.SaveChanges();
+            dragon.MaxHealthPoint = dragonHealtPointNow;
+            await _ctx.Hits.AddAsync(heroStrike);
+            await _ctx.SaveChangesAsync();
             return Ok(dragonHealtPointNow);
         }
     }

@@ -30,8 +30,15 @@ namespace HeroesAndDragons.DBData
             };
             var dragons = new List<Dragon>
             {
-                new Dragon{ Name = "DragonBIK", CreatedAt = DateTime.Now, HealthPoint = 400 },
-                new Dragon{ Name = "DragonCooking", CreatedAt = DateTime.Now, HealthPoint = 100 },
+                new Dragon{ Name = "DragonBIK", CreatedAt = DateTime.Now, MaxHealthPoint = 400 },
+                new Dragon{ Name = "Dragonasda", CreatedAt = DateTime.Now, MaxHealthPoint = 400 },
+                new Dragon{ Name = "Flame Dragon", CreatedAt = DateTime.Now, MaxHealthPoint = 400 },
+                new Dragon{ Name = "Dragon2312", CreatedAt = DateTime.Now, MaxHealthPoint = 300 },
+                new Dragon{ Name = "DragonAFAf", CreatedAt = DateTime.Now, MaxHealthPoint = 100 },
+                new Dragon{ Name = "Dragon12efe", CreatedAt = DateTime.Now, MaxHealthPoint = 400 },
+                new Dragon{ Name = "DragonCGE", CreatedAt = DateTime.Now, MaxHealthPoint = 100 },
+                new Dragon{ Name = "DragonBweg3", CreatedAt = DateTime.Now, MaxHealthPoint = 40 },
+                new Dragon{ Name = "DragonCwg3g4fsdf", CreatedAt = DateTime.Now, MaxHealthPoint = 80 },
             };
             context.Heroes.AddRange(heroes);
             context.Dragons.AddRange(dragons);

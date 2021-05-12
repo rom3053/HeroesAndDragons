@@ -11,5 +11,7 @@ namespace HeroesAndDragons.Models
         public DateTime CreatedAt { get; set; }
         public int WeaponDamage { get; set; }
         public string Role { get; set; }
+
+        
     }
 }
