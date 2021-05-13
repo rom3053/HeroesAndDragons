@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace HeroesAndDragons.AuthOptions
+namespace HeroesAndDragons.Config
 {
     public class AuthOptions
     {

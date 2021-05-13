@@ -1,5 +1,7 @@
 ﻿using HeroesAndDragons.DBData;
 using HeroesAndDragons.Models;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,6 +16,11 @@ namespace HeroesAndDragons.Services
         {
             _ctx = ctx;
         }
+        public IQueryable<Dragon> GetDragons()
+        {
+            return _ctx.Dragons.Select(d => d);
+        }
+
         public async Task<Dragon> GetDragonById(int dragonId)
         {
             return await _ctx.Dragons.FindAsync(dragonId);

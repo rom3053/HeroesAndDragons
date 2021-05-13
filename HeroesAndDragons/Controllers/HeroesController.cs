@@ -97,15 +97,15 @@ namespace HeroesAndDragons.Controllers
                 return BadRequest(new { errorText = "Couldnt find a hero or a dragon" });
             }
 
-            IQueryable<DragonHitStat> hits = _hitService.GetHerosHits(heroIdClaim);
+            IQueryable<DragonHitInfo> hits = _hitService.GetHerosHits(heroIdClaim);
 
             hits = SortHeroHits(sortOrder, hits);
 
             int pageSize = 3;
-            return Ok(await PaginatedList<DragonHitStat>.CreateAsync(hits.AsNoTracking(), pageNumber ?? 1, pageSize));
+            return Ok(await PaginatedList<DragonHitInfo>.CreateAsync(hits.AsNoTracking(), pageNumber ?? 1, pageSize));
         }
 
-        private static IQueryable<DragonHitStat> SortHeroHits(string sortOrder, IQueryable<DragonHitStat> hits)
+        private static IQueryable<DragonHitInfo> SortHeroHits(string sortOrder, IQueryable<DragonHitInfo> hits)
         {
             switch (sortOrder)
             {
@@ -125,9 +125,9 @@ namespace HeroesAndDragons.Controllers
 
             return hits;
         }
-        //api/heroes/attackdragon
+        //api/heroes/attack
         [Authorize]
-        [HttpPost("attackdragon")]
+        [HttpPost("attack")]
         public async Task<IActionResult> HitAsync(int dragonId)
         {
             int heroIdClaim = 0;

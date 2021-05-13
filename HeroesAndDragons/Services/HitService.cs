@@ -15,11 +15,11 @@ namespace HeroesAndDragons.Services
         {
             _ctx = ctx;
         }
-        public IQueryable<DragonHitStat> GetHerosHits(int heroId)
+        public IQueryable<DragonHitInfo> GetHerosHits(int heroId)
         {
             return from h in _ctx.Hits
                    where h.HeroId == heroId
-                   select new DragonHitStat
+                   select new DragonHitInfo
                    {
                        DragonName = (from d in _ctx.Dragons where d.Id == h.DragonId select d.Name).FirstOrDefault(),
                        HitPower = h.HitPower,

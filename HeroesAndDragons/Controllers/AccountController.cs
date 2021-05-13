@@ -23,17 +23,13 @@ namespace HeroesAndDragons.Controllers
     {
         private readonly AppDbContext _ctx;
         private HeroService _heroService;
-        //private List<Hero> people = new List<Hero>
-        //{
-        //    new Hero { Name="admin@gmail.com", Role = "admin" },
-        //    new Hero { Name="qwerty@gmail.com", Role = "user" }
-        //};
 
         public AccountController(AppDbContext ctx)
         {
             _ctx = ctx;
             _heroService = new HeroService(_ctx);
         }
+
         [HttpPost("/createhero")]
         public async Task<IActionResult> CreateHero(string username)
         {
@@ -42,13 +38,13 @@ namespace HeroesAndDragons.Controllers
             if (rx.IsMatch(username))
             {
                 Hero hero = await _heroService.GetHeroByNameAsync(username);
-                if (hero==null)
+                if (hero == null)
                 {
-                   hero = await _heroService.CreateHeroAsync(username);
-                   return await TokenAsync(username);
+                    hero = await _heroService.CreateHeroAsync(username);
+                    return await TokenAsync(username);
                 }
             }
-            return Ok("bad name");
+            return BadRequest(new { errorText = "Invalid username." });
         }
         // POST api/<AccountController>
         [HttpPost("/token")]
@@ -61,14 +57,14 @@ namespace HeroesAndDragons.Controllers
             }
 
             var now = DateTime.UtcNow;
-            // создаем JWT-токен
+
             var jwt = new JwtSecurityToken(
-                    issuer: AuthOptions.AuthOptions.ISSUER,
-                    audience: AuthOptions.AuthOptions.AUDIENCE,
+                    issuer: Config.AuthOptions.ISSUER,
+                    audience: Config.AuthOptions.AUDIENCE,
                     notBefore: now,
                     claims: identity.Claims,
-                    expires: now.Add(TimeSpan.FromMinutes(AuthOptions.AuthOptions.LIFETIME)),
-                    signingCredentials: new SigningCredentials(AuthOptions.AuthOptions.GetSymmetricSecurityKey(), SecurityAlgorithms.HmacSha256));
+                    expires: now.Add(TimeSpan.FromMinutes(Config.AuthOptions.LIFETIME)),
+                    signingCredentials: new SigningCredentials(Config.AuthOptions.GetSymmetricSecurityKey(), SecurityAlgorithms.HmacSha256));
             var encodedJwt = new JwtSecurityTokenHandler().WriteToken(jwt);
 
             var response = new
@@ -91,14 +87,14 @@ namespace HeroesAndDragons.Controllers
                     new Claim(ClaimsIdentity.DefaultRoleClaimType, person.Role),
                     new Claim(ClaimTypes.NameIdentifier, person.Id.ToString())
                 };
-                
+
                 ClaimsIdentity claimsIdentity =
                 new ClaimsIdentity(claims, "Token", ClaimsIdentity.DefaultNameClaimType,
                     ClaimsIdentity.DefaultRoleClaimType);
                 return claimsIdentity;
             }
 
-            // если пользователя не найдено
+            
             return null;
         }
     }

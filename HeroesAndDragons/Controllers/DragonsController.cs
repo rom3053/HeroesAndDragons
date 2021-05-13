@@ -26,12 +26,7 @@ namespace HeroesAndDragons.Controllers
         }
 
         // GET: api/Dragons
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Dragon>>> GetDragons()
-        {
-            return await _context.Dragons.ToListAsync();
-        }
-        [HttpGet("dragonpages")]
+        [HttpGet("dragons")]
         public async Task<IActionResult> GetDragonPages(string sortOrder,
             string currentFilter,
             string searchString,
@@ -46,22 +41,40 @@ namespace HeroesAndDragons.Controllers
                 searchString = currentFilter;
             }
 
-            var dragons = _context.Dragons.Select(d=>d);
+            var dragons = _dragonService.GetDragons();
 
             int filterHP;
-            if (!String.IsNullOrEmpty(searchString) && int.TryParse(searchString, out filterHP))
+            bool isFilterHP = int.TryParse(searchString, out filterHP);
+            if (!String.IsNullOrEmpty(searchString) && isFilterHP)
             {
-                switch (currentFilter)
-                {
-                    case "max_HP": dragons = dragons.Where(f => f.MaxHealthPoint == filterHP);
-                        break;
-                    case "current_HP": dragons = dragons.Where(f => f.CurrentHealthPoint == filterHP);
-                        break;
-                    default:
-                        break;
-                }
+                dragons = FiltrationDragons(currentFilter, dragons, filterHP);
             }
 
+            dragons = SortDragons(sortOrder, dragons);
+
+            int pageSize = 3;
+            return Ok(await PaginatedList<Dragon>.CreateAsync(dragons.AsNoTracking(), pageNumber ?? 1, pageSize));
+        }
+
+        private static IQueryable<Dragon> FiltrationDragons(string currentFilter, IQueryable<Dragon> dragons, int filterHP)
+        {
+            switch (currentFilter)
+            {
+                case "max_HP":
+                    dragons = dragons.Where(f => f.MaxHealthPoint == filterHP);
+                    break;
+                case "current_HP":
+                    dragons = dragons.Where(f => f.CurrentHealthPoint == filterHP);
+                    break;
+                default:
+                    break;
+            }
+
+            return dragons;
+        }
+
+        private static IQueryable<Dragon> SortDragons(string sortOrder, IQueryable<Dragon> dragons)
+        {
             switch (sortOrder)
             {
                 case "name_desc":
@@ -78,14 +91,14 @@ namespace HeroesAndDragons.Controllers
                     break;
             }
 
-            int pageSize = 3;
-            return Ok(await PaginatedList<Dragon>.CreateAsync(dragons.AsNoTracking(), pageNumber ?? 1, pageSize));
+            return dragons;
         }
-        // GET: api/Dragons/search
-        [HttpGet("search")]
+
+        // GET: api/Dragons/{id}
+        [HttpGet("{id}")]
         public async Task<ActionResult<Dragon>> GetDragon(int id)
         {
-            var dragon = await _context.Dragons.FindAsync(id);
+            var dragon = await _dragonService.GetDragonById(id);
 
             if (dragon == null)
             {

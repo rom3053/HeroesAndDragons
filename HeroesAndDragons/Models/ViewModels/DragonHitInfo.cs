@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace HeroesAndDragons.ViewModels
 {
-    public class DragonHitStat
+    public class DragonHitInfo
     {
         public string DragonName { get; set; }
         public int HitPower { get; set; }

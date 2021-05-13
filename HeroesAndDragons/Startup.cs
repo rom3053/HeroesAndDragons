@@ -15,7 +15,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using HeroesAndDragons.AuthOptions;
+using HeroesAndDragons.Config;
 using HeroesAndDragons.DBData;
 
 namespace HeroesAndDragons
@@ -41,46 +41,24 @@ namespace HeroesAndDragons
                         options.RequireHttpsMetadata = false;
                         options.TokenValidationParameters = new TokenValidationParameters
                         {
-                            // укзывает, будет ли валидироваться издатель при валидации токена
+                            
                             ValidateIssuer = true,
-                            // строка, представляющая издателя
-                            ValidIssuer = AuthOptions.AuthOptions.ISSUER,
+                            
+                            ValidIssuer = Config.AuthOptions.ISSUER,
 
-                            // будет ли валидироваться потребитель токена
+                            
                             ValidateAudience = true,
-                            // установка потребителя токена
-                            ValidAudience = AuthOptions.AuthOptions.AUDIENCE,
-                            // будет ли валидироваться время существования
+                           
+                            ValidAudience = Config.AuthOptions.AUDIENCE,
+                            
                             ValidateLifetime = true,
 
-                            // установка ключа безопасности
-                            IssuerSigningKey = AuthOptions.AuthOptions.GetSymmetricSecurityKey(),
-                            // валидация ключа безопасности
+                           
+                            IssuerSigningKey = Config.AuthOptions.GetSymmetricSecurityKey(),
+                            
                             ValidateIssuerSigningKey = true,
                         };
                     });
-            //var jwtTokenConfig = Configuration.GetSection("jwtTokenConfig").Get<JWT.JwtTokenConfig>();
-            //services.AddSingleton(jwtTokenConfig);
-            //services.AddAuthentication(x =>
-            //{
-            //    x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-            //    x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-            //}).AddJwtBearer(x =>
-            //{
-            //    x.RequireHttpsMetadata = true;
-            //    x.SaveToken = true;
-            //    x.TokenValidationParameters = new TokenValidationParameters
-            //    {
-            //        ValidateIssuer = true,
-            //        ValidIssuer = jwtTokenConfig.Issuer,
-            //        ValidateIssuerSigningKey = true,
-            //        IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(jwtTokenConfig.Secret)),
-            //        ValidAudience = jwtTokenConfig.Audience,
-            //        ValidateAudience = true,
-            //        ValidateLifetime = true,
-            //        ClockSkew = TimeSpan.FromMinutes(1)
-            //    };
-            //});
            
             
         }
