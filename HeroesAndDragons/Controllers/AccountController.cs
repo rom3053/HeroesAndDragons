@@ -10,6 +10,9 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
 using HeroesAndDragons.Models;
+using HeroesAndDragons.DBData;
+using HeroesAndDragons.Services;
+using System.Text.RegularExpressions;
 
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
@@ -18,19 +21,40 @@ namespace HeroesAndDragons.Controllers
 {
     public class AccountController : ControllerBase
     {
-        public const string WeaponDamage = "WeaponDamage";
-        private List<Hero> people = new List<Hero>
+        private readonly AppDbContext _ctx;
+        private HeroService _heroService;
+        //private List<Hero> people = new List<Hero>
+        //{
+        //    new Hero { Name="admin@gmail.com", Role = "admin" },
+        //    new Hero { Name="qwerty@gmail.com", Role = "user" }
+        //};
+
+        public AccountController(AppDbContext ctx)
         {
-            new Hero { Name="admin@gmail.com", Role = "admin" },
-            new Hero { Name="qwerty@gmail.com", Role = "user" }
-        };
-
-
+            _ctx = ctx;
+            _heroService = new HeroService(_ctx);
+        }
+        [HttpPost("/createhero")]
+        public async Task<IActionResult> CreateHero(string username)
+        {
+            string pattern = @"^(?=[a-zA-Z0-9\s]{4,20}$)";
+            var rx = new Regex(pattern);
+            if (rx.IsMatch(username))
+            {
+                Hero hero = await _heroService.GetHeroByNameAsync(username);
+                if (hero==null)
+                {
+                   hero = await _heroService.CreateHeroAsync(username);
+                   return await TokenAsync(username);
+                }
+            }
+            return Ok("bad name");
+        }
         // POST api/<AccountController>
         [HttpPost("/token")]
-        public IActionResult Token(string username)
+        public async Task<IActionResult> TokenAsync(string username)
         {
-            var identity = GetIdentity(username);
+            ClaimsIdentity identity = await GetIdentityAsync(username);
             if (identity == null)
             {
                 return BadRequest(new { errorText = "Invalid username or password." });
@@ -56,9 +80,9 @@ namespace HeroesAndDragons.Controllers
             return Ok(response);
         }
 
-        private ClaimsIdentity GetIdentity(string username)
+        private async Task<ClaimsIdentity> GetIdentityAsync(string username)
         {
-            Hero person = people.FirstOrDefault(x => x.Name == username);
+            Hero person = await _heroService.GetHeroByNameAsync(username);
             if (person != null)
             {
                 var claims = new List<Claim>

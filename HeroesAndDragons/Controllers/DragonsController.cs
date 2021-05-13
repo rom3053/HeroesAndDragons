@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using HeroesAndDragons.DBData;
 using HeroesAndDragons.Models;
 using HeroesAndDragons.Helpers;
+using HeroesAndDragons.Services;
 
 namespace HeroesAndDragons.Controllers
 {
@@ -16,10 +17,12 @@ namespace HeroesAndDragons.Controllers
     public class DragonsController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly DragonService _dragonService;
 
         public DragonsController(AppDbContext context)
         {
             _context = context;
+            _dragonService = new DragonService(_context);
         }
 
         // GET: api/Dragons
@@ -34,9 +37,13 @@ namespace HeroesAndDragons.Controllers
             string searchString,
             int? pageNumber)
         {
-            if (searchString == null)
+            if (searchString != null)
             {
                 pageNumber = 1;
+            }
+            else
+            {
+                searchString = currentFilter;
             }
 
             var dragons = _context.Dragons.Select(d=>d);
@@ -74,7 +81,7 @@ namespace HeroesAndDragons.Controllers
             int pageSize = 3;
             return Ok(await PaginatedList<Dragon>.CreateAsync(dragons.AsNoTracking(), pageNumber ?? 1, pageSize));
         }
-        // GET: api/Dragons/5
+        // GET: api/Dragons/search
         [HttpGet("search")]
         public async Task<ActionResult<Dragon>> GetDragon(int id)
         {
@@ -87,7 +94,13 @@ namespace HeroesAndDragons.Controllers
 
             return dragon;
         }
-
+        //api/Dragons/journeytodragon 
+        //CreateDragon
+        [HttpPost("journeytodragon")]
+        public async Task<ActionResult<Dragon>> JourneyToDragon()
+        {
+            return await _dragonService.CreateDragon();
+        }
         // PUT: api/Dragons/5
         // To protect from overposting attacks, enable the specific properties you want to bind to, for
         // more details, see https://go.microsoft.com/fwlink/?linkid=2123754.

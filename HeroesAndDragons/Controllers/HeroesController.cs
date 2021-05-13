@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using HeroesAndDragons.DBData;
 using HeroesAndDragons.Helpers;
 using HeroesAndDragons.Models;
+using HeroesAndDragons.Services;
 using HeroesAndDragons.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -19,10 +20,19 @@ namespace HeroesAndDragons.Controllers
     public class HeroesController : ControllerBase
     {
         private readonly AppDbContext _ctx;
+        private HeroService _heroService;
+        private DragonService _dragonService;
+        private HitService _hitService;
         public HeroesController(AppDbContext ctx)
         {
             _ctx = ctx;
+            _heroService = new HeroService(_ctx);
+            _dragonService = new DragonService(_ctx);
+            _hitService = new HitService(_ctx);
         }
+
+        //api/heroes Get All heroes
+        [Authorize]
         public async Task<IActionResult> Index(
             string sortOrder,
             string currentFilter,
@@ -39,12 +49,10 @@ namespace HeroesAndDragons.Controllers
                 searchString = currentFilter;
             }
 
-
-            var heroes = from s in _ctx.Heroes
-                           select s;
+            IQueryable<Hero> heroes = _heroService.GetHeroes();
             if (!String.IsNullOrEmpty(searchString))
             {
-                heroes = heroes.Where(s => s.Name.StartsWith(searchString));                      
+                heroes = heroes.Where(s => s.Name.StartsWith(searchString));
             }
             switch (sortOrder)
             {
@@ -65,6 +73,8 @@ namespace HeroesAndDragons.Controllers
             int pageSize = 3;
             return Ok(await PaginatedList<Hero>.CreateAsync(heroes.AsNoTracking(), pageNumber ?? 1, pageSize));
         }
+        //api/heroes/history View all hero hits
+        [Authorize]
         [HttpGet("history")]
         public async Task<IActionResult> HeroHitHistory(string sortOrder,
             string currentFilter,
@@ -79,38 +89,24 @@ namespace HeroesAndDragons.Controllers
             {
                 searchString = currentFilter;
             }
-            //запрос по ИД героя, получаем его удары
-            //в идеале просуммировать урон чтобы без дублей
-            var hits = from h in _ctx.Hits
-                       where h.HeroId == 2
-                       select new DragonHitStat
-                       {
-                           DragonName = (from d in _ctx.Dragons where d.Id == h.DragonId select d.Name).FirstOrDefault(),
-                           HitPower = h.HitPower,
-                           CreatedAt= h.CreatedAt,
-                       };
             
-
-            var hitsDragonV = from h in _ctx.Hits
-                             where h.HeroId == 2
-                             group h by h.DragonId into hitdragon
-                             orderby hitdragon.Key
-                             select new
-                             {
-                                 DragonId = hitdragon.Key,
-                                 DragonName = (from d in _ctx.Dragons where d.Id == hitdragon.Key select d.Name).FirstOrDefault(),
-                                 TotalDamage = hitdragon.Sum(x => x.HitPower)
-                             };
-            
-            foreach (var item in hitsDragonV)
+            int heroIdClaim = 0;
+            bool isHeroId = GetAuthHeroId(ref heroIdClaim);
+            if (!isHeroId)
             {
-                Console.WriteLine(item.TotalDamage);
+                return BadRequest(new { errorText = "Couldnt find a hero or a dragon" });
             }
 
-            //foreach (var item in hitsDragon)
-            //{
-            //    Console.WriteLine(item.DragonID);
-            //}
+            IQueryable<DragonHitStat> hits = _hitService.GetHerosHits(heroIdClaim);
+
+            hits = SortHeroHits(sortOrder, hits);
+
+            int pageSize = 3;
+            return Ok(await PaginatedList<DragonHitStat>.CreateAsync(hits.AsNoTracking(), pageNumber ?? 1, pageSize));
+        }
+
+        private static IQueryable<DragonHitStat> SortHeroHits(string sortOrder, IQueryable<DragonHitStat> hits)
+        {
             switch (sortOrder)
             {
                 case "name_desc":
@@ -127,43 +123,40 @@ namespace HeroesAndDragons.Controllers
                     break;
             }
 
-            int pageSize = 3;
-            return Ok(await PaginatedList<DragonHitStat>.CreateAsync(hits.AsNoTracking(), pageNumber ?? 1, pageSize));
+            return hits;
         }
-        //[Authorize]
-        [HttpGet("attackdragon")]
+        //api/heroes/attackdragon
+        [Authorize]
+        [HttpPost("attackdragon")]
         public async Task<IActionResult> HitAsync(int dragonId)
         {
-            bool heroChecked = true;
-            int heroId = 2;
-            int heroIdClaim = 15;
+            int heroIdClaim = 0;
+            bool isHeroId = GetAuthHeroId(ref heroIdClaim);
+            Dragon dragon = await _dragonService.GetDragonById(dragonId);
+            Hero hero = await _heroService.GetHeroByIdAsync(heroIdClaim);
 
-            var dragon = await _ctx.Dragons.FindAsync(dragonId);
-            //-----------------------
-            //foreach (var claim in User.Claims)
-            //{
-            //    if (claim.Type == ClaimTypes.NameIdentifier)
-            //    {
-            //        heroChecked = int.TryParse(claim.Value, out heroIdClaim);
-            //    }
-            //}
-
-            var hero = await _ctx.Heroes.FindAsync(heroId);
-            if (hero == null || !heroChecked || dragon == null)
+            if (hero == null || !isHeroId || dragon == null)
             {
                 return BadRequest(new { errorText = "Couldnt find a hero or a dragon" });
             }
             //--------------------------
-            Random rnd = new Random();
-            int hitPower =  hero.WeaponDamage + rnd.Next(1, 3);
-            int dragonHealtPointNow = dragon.MaxHealthPoint - hitPower;
-
-            Hit heroStrike = new Hit() { CreatedAt = DateTime.Now, DragonId = dragon.Id, HeroId = hero.Id, HitPower = hitPower };
-
-            dragon.MaxHealthPoint = dragonHealtPointNow;
-            await _ctx.Hits.AddAsync(heroStrike);
-            await _ctx.SaveChangesAsync();
+            int dragonHealtPointNow = await _hitService.HeroHitDragon(dragon, hero);
             return Ok(dragonHealtPointNow);
+        }
+
+        private bool GetAuthHeroId(ref int heroIdClaim)
+        {
+            bool heroChecked = true;
+
+            foreach (var claim in User.Claims)
+            {
+                if (claim.Type == ClaimTypes.NameIdentifier)
+                {
+                    heroChecked = int.TryParse(claim.Value, out heroIdClaim);
+                }
+            }
+
+            return heroChecked;
         }
     }
 }
