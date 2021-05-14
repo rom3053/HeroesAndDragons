@@ -20,14 +20,14 @@ namespace HeroesAndDragons.Controllers
     public class HeroesController : ControllerBase
     {
         private readonly AppDbContext _ctx;
-        private HeroService _heroService;
-        private DragonService _dragonService;
+        private HeroRepository _heroService;
+        private DragonRepository _dragonService;
         private HitService _hitService;
         public HeroesController(AppDbContext ctx)
         {
             _ctx = ctx;
-            _heroService = new HeroService(_ctx);
-            _dragonService = new DragonService(_ctx);
+            _heroService = new HeroRepository(_ctx);
+            _dragonService = new DragonRepository(_ctx);
             _hitService = new HitService(_ctx);
         }
 

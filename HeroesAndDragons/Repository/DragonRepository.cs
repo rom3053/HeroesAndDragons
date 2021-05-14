@@ -9,10 +9,10 @@ using System.Threading.Tasks;
 
 namespace HeroesAndDragons.Services
 {
-    public class DragonService
+    public class DragonRepository
     {
         private readonly AppDbContext _ctx;
-        public DragonService(AppDbContext ctx)
+        public DragonRepository(AppDbContext ctx)
         {
             _ctx = ctx;
         }

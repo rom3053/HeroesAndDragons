@@ -9,6 +9,7 @@ using HeroesAndDragons.DBData;
 using HeroesAndDragons.Models;
 using HeroesAndDragons.Helpers;
 using HeroesAndDragons.Services;
+using Microsoft.AspNetCore.Authorization;
 
 namespace HeroesAndDragons.Controllers
 {
@@ -17,16 +18,17 @@ namespace HeroesAndDragons.Controllers
     public class DragonsController : ControllerBase
     {
         private readonly AppDbContext _context;
-        private readonly DragonService _dragonService;
+        private readonly DragonRepository _dragonService;
 
         public DragonsController(AppDbContext context)
         {
             _context = context;
-            _dragonService = new DragonService(_context);
+            _dragonService = new DragonRepository(_context);
         }
 
         // GET: api/Dragons
-        [HttpGet("dragons")]
+        [Authorize]
+        [HttpGet]
         public async Task<IActionResult> GetDragonPages(string sortOrder,
             string currentFilter,
             string searchString,
@@ -93,8 +95,9 @@ namespace HeroesAndDragons.Controllers
 
             return dragons;
         }
-
+        
         // GET: api/Dragons/{id}
+        [Authorize]
         [HttpGet("{id}")]
         public async Task<ActionResult<Dragon>> GetDragon(int id)
         {
@@ -109,74 +112,11 @@ namespace HeroesAndDragons.Controllers
         }
         //api/Dragons/journeytodragon 
         //CreateDragon
+        [Authorize]
         [HttpPost("journeytodragon")]
         public async Task<ActionResult<Dragon>> JourneyToDragon()
         {
             return await _dragonService.CreateDragon();
-        }
-        // PUT: api/Dragons/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to, for
-        // more details, see https://go.microsoft.com/fwlink/?linkid=2123754.
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutDragon(int id, Dragon dragon)
-        {
-            if (id != dragon.Id)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(dragon).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!DragonExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
-        }
-
-        // POST: api/Dragons
-        // To protect from overposting attacks, enable the specific properties you want to bind to, for
-        // more details, see https://go.microsoft.com/fwlink/?linkid=2123754.
-        [HttpPost]
-        public async Task<ActionResult<Dragon>> PostDragon(Dragon dragon)
-        {
-            _context.Dragons.Add(dragon);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetDragon", new { id = dragon.Id }, dragon);
-        }
-
-        // DELETE: api/Dragons/5
-        [HttpDelete("{id}")]
-        public async Task<ActionResult<Dragon>> DeleteDragon(int id)
-        {
-            var dragon = await _context.Dragons.FindAsync(id);
-            if (dragon == null)
-            {
-                return NotFound();
-            }
-
-            _context.Dragons.Remove(dragon);
-            await _context.SaveChangesAsync();
-
-            return dragon;
-        }
-
-        private bool DragonExists(int id)
-        {
-            return _context.Dragons.Any(e => e.Id == id);
         }
     }
 }

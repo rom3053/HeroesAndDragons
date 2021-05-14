@@ -22,12 +22,12 @@ namespace HeroesAndDragons.Controllers
     public class AccountController : ControllerBase
     {
         private readonly AppDbContext _ctx;
-        private HeroService _heroService;
+        private HeroRepository _heroService;
 
         public AccountController(AppDbContext ctx)
         {
             _ctx = ctx;
-            _heroService = new HeroService(_ctx);
+            _heroService = new HeroRepository(_ctx);
         }
 
         [HttpPost("/createhero")]
