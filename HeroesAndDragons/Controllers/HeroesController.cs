@@ -33,6 +33,7 @@ namespace HeroesAndDragons.Controllers
 
         //api/heroes Get All heroes
         [Authorize]
+        [HttpGet]
         public async Task<IActionResult> Index(
             string sortOrder,
             string currentFilter,
